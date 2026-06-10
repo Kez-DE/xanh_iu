@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -45,10 +46,16 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAlertsRoute = AuthenticatedAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
@@ -56,6 +63,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
@@ -65,20 +73,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/chat' | '/dashboard' | '/feedback'
+  fullPaths: '/' | '/auth' | '/alerts' | '/chat' | '/dashboard' | '/feedback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/chat' | '/dashboard' | '/feedback'
+  to: '/' | '/auth' | '/alerts' | '/chat' | '/dashboard' | '/feedback'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/alerts'
     | '/_authenticated/chat'
     | '/_authenticated/dashboard'
     | '/_authenticated/feedback'
@@ -134,16 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/alerts': {
+      id: '/_authenticated/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AuthenticatedAlertsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,

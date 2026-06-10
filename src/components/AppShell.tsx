@@ -2,6 +2,7 @@ import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  Bell,
   Car,
   Gauge,
   LogOut,
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: Gauge },
+  { to: "/alerts", label: "Ticket Triage 🔴", icon: Bell },
   { to: "/feedback", label: "Phản hồi", icon: MessageSquare },
   { to: "/chat", label: "AI Chat", icon: Sparkles },
 ] as const;

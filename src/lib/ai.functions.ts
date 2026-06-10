@@ -30,19 +30,23 @@ export const chatWithAI = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
+    // Dùng Groq API (llama-3.3-70b-versatile) thay vì Lovable AI
+    const apiKey = process.env.GROQ_API_KEY;
+    const modelName = process.env.GROQ_MODEL_NAME ?? "llama-3.3-70b-versatile";
+
     if (!apiKey) {
-      throw new Error("Thiếu LOVABLE_API_KEY — vui lòng bật Lovable AI.");
+      throw new Error("Thiếu GROQ_API_KEY trong file .env — vui lòng cấu hình lại.");
     }
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: modelName,
+        temperature: 0.5,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           ...data.messages,
@@ -53,8 +57,8 @@ export const chatWithAI = createServerFn({ method: "POST" })
     if (!res.ok) {
       const text = await res.text();
       if (res.status === 429) throw new Error("Quá nhiều yêu cầu, thử lại sau ít phút.");
-      if (res.status === 402) throw new Error("Hết credit AI. Vui lòng nạp thêm.");
-      throw new Error(`AI lỗi (${res.status}): ${text.slice(0, 200)}`);
+      if (res.status === 401) throw new Error("GROQ_API_KEY không hợp lệ.");
+      throw new Error(`Groq AI lỗi (${res.status}): ${text.slice(0, 200)}`);
     }
 
     const json = (await res.json()) as {
