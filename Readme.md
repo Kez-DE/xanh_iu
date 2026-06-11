@@ -2,6 +2,8 @@
 
 Tài liệu này hướng dẫn cài đặt, cấu hình, chạy và theo dõi toàn bộ repo **AI Quality Intelligence Platform**.
 
+Để đóng gói và chạy bằng container, xem [DOCKER.md](./DOCKER.md).
+
 ## 1. Tổng quan hệ thống
 
 Repo gồm ba phần chính:
@@ -241,7 +243,7 @@ Ghi feedback vào Supabase bằng service-role key
 UI polling backend và hiển thị review mới với hiệu ứng lướt
         |
         v
-Sau mỗi N batch, spike_detector quét P0/P1 theo khu vực
+Sau mỗi N batch, spike_detector quét P2-P5 theo khu vực
         |
         v
 AI Agent phân tích nguyên nhân, hành động, phòng ban
@@ -328,7 +330,7 @@ Không nên đặt `LIVE_STREAM_RESET_ON_START=true` trên môi trường vận 
 
 ## 8. Auto Ticket và vòng đời xử lý
 
-Spike detector đọc các feedback mức `P0/P1` trong khoảng thời gian gần nhất, nhóm theo khu vực và kích hoạt khi một khu vực đạt ngưỡng spike.
+Spike detector đọc các feedback mức `P2-P5` trong khoảng thời gian gần nhất, nhóm theo khu vực và kích hoạt khi một khu vực đạt ngưỡng spike. Ticket nhận mức severity cao nhất trong nhóm; `P5` là nghiêm trọng nhất.
 
 Ticket mới được tạo với trạng thái:
 
@@ -343,11 +345,11 @@ Workflow tự động mặc định:
 ```env
 AUTO_TICKET_WORKFLOW_ENABLED=true
 AUTO_TICKET_IN_PROGRESS_AFTER_SECONDS=10
-AUTO_TICKET_RESOLVED_AFTER_SECONDS=30
+AUTO_TICKET_RESOLVED_AFTER_SECONDS=55
 ```
 
-- Sau 10 giây kể từ lúc tạo, ticket `open` chuyển sang `in_progress`.
-- Sau 30 giây kể từ lúc tạo, ticket `in_progress` chuyển sang `resolved`.
+- Sau 10 giây, ticket chuyển từ `open` sang `in_progress`.
+- Ticket ở trạng thái `in_progress` khoảng 45 giây, rồi chuyển sang `resolved` khi tổng thời gian kể từ lúc tạo đạt 55 giây.
 - Scheduler kiểm tra workflow mỗi 5 giây.
 - Người dùng vẫn có thể bấm xử lý thủ công trên trang Ticket Triage.
 
@@ -448,7 +450,7 @@ Sau khi đổi `.env`, restart UI.
 
 1. Kiểm tra `auto_ticket=true`.
 2. Chờ đủ `ticket_every_batches`.
-3. Kiểm tra dataset có feedback `P0/P1` theo cùng khu vực.
+3. Kiểm tra dataset có ít nhất 5 feedback `P2-P5` theo cùng khu vực.
 4. Kiểm tra `/api/agent/status` có provider và key hợp lệ.
 5. Kiểm tra `last_ticket_error` trong stream status.
 

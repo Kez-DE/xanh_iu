@@ -260,7 +260,7 @@ function KpiStrip() {
     {
       label: "Open tickets",
       value: "47",
-      delta: "P0: 2 · P1: 9",
+      delta: "P5: 2 · P4: 9",
       icon: ClipboardList,
       tone: "deep",
     },
@@ -534,25 +534,25 @@ function LiveFeed() {
 function AlertsPanel() {
   const alerts = [
     {
-      sev: "P0",
+      sev: "P5",
       title: "Spike khiếu nại thanh toán",
       desc: "TP.HCM Q7 · +280% trong 30 phút · 14 case",
       time: "2′ trước",
     },
     {
-      sev: "P1",
+      sev: "P4",
       title: "App version 4.12.0 lỗi xác nhận chuyến",
       desc: "iOS · 38 phản hồi trong 1 giờ",
       time: "12′",
     },
     {
-      sev: "P1",
+      sev: "P4",
       title: "Tuyến Nội Bài → Cầu Giấy điểm thấp bất thường",
       desc: "rating TB 3.1 · giảm 1.4 so với baseline",
       time: "27′",
     },
     {
-      sev: "P2",
+      sev: "P3",
       title: "Cụm 6 tài xế lặp phàn nàn 'thái độ'",
       desc: "Đà Nẵng · ngưỡng cảnh báo driver-watch",
       time: "1h",
@@ -575,9 +575,9 @@ function AlertsPanel() {
               <div className="flex items-start gap-2">
                 <span
                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
-                    a.sev === "P0"
+                    a.sev === "P5"
                       ? "bg-xanh-coral text-white"
-                      : a.sev === "P1"
+                      : a.sev === "P4"
                         ? "bg-xanh-amber text-xanh-deep"
                         : "bg-xanh-mint text-xanh-deep"
                   }`}
@@ -684,29 +684,29 @@ function TicketBoard() {
       name: "Triage",
       color: "var(--xanh-deep)",
       items: [
-        { id: "T-9012", title: "Khiếu nại trừ tiền 2 lần", sla: "1h", sev: "P0" },
-        { id: "T-9011", title: "App treo khi xác nhận chuyến", sla: "4h", sev: "P1" },
+        { id: "T-9012", title: "Khiếu nại trừ tiền 2 lần", sla: "1h", sev: "P5" },
+        { id: "T-9011", title: "App treo khi xác nhận chuyến", sla: "4h", sev: "P4" },
       ],
     },
     {
       name: "Assigned",
       color: "var(--xanh-cyan)",
       items: [
-        { id: "T-8997", title: "Tài xế DRV-2841 — pattern lặp", sla: "1d", sev: "P2" },
-        { id: "T-8990", title: "Tuyến Nội Bài rating thấp", sla: "8h", sev: "P1" },
+        { id: "T-8997", title: "Tài xế DRV-2841 — pattern lặp", sla: "1d", sev: "P3" },
+        { id: "T-8990", title: "Tuyến Nội Bài rating thấp", sla: "8h", sev: "P4" },
       ],
     },
     {
       name: "In progress",
       color: "var(--xanh-green)",
-      items: [{ id: "T-8975", title: "Điều hoà xe yếu — fleet ops", sla: "2d", sev: "P2" }],
+      items: [{ id: "T-8975", title: "Điều hoà xe yếu — fleet ops", sla: "2d", sev: "P3" }],
     },
     {
       name: "Resolved · feed correction log",
       color: "var(--xanh-deep)",
       items: [
-        { id: "T-8902", title: "Sự cố thanh toán Momo", sla: "✓", sev: "P0" },
-        { id: "T-8888", title: "Hotline overflow Q1", sla: "✓", sev: "P1" },
+        { id: "T-8902", title: "Sự cố thanh toán Momo", sla: "✓", sev: "P5" },
+        { id: "T-8888", title: "Hotline overflow Q1", sla: "✓", sev: "P4" },
       ],
     },
   ];
@@ -745,7 +745,7 @@ function TicketBoard() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[10px] text-muted-foreground">{it.id}</span>
-                    <Pill tone={it.sev === "P0" ? "coral" : it.sev === "P1" ? "amber" : "mint"}>
+                    <Pill tone={it.sev === "P5" ? "coral" : it.sev === "P4" ? "amber" : "mint"}>
                       {it.sev}
                     </Pill>
                   </div>
@@ -1084,7 +1084,7 @@ function ValueView() {
   const values = [
     { v: "↓ 80%", l: "thời gian phát hiện sự cố (MTTD)" },
     { v: "↓ 60%", l: "phản hồi bị bỏ sót" },
-    { v: "↑ 3×", l: "tốc độ xử lý ticket P0/P1" },
+    { v: "↑ 3×", l: "tốc độ xử lý ticket P5/P4" },
     { v: "100%", l: "phản hồi được phân loại tự động" },
   ];
   return (

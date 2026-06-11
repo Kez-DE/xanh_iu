@@ -99,7 +99,7 @@ Dữ liệu thô (150 reviews)
         ▼
   [4] spike_detector.py
   → Group By theo Area (khu vực)
-  → Đếm số feedback tiêu cực (P4, P5) trong 1 giờ qua
+  → Đếm số feedback P2-P5 trong 1 giờ qua
   → Nếu ≥ 5 case/khu vực → Kích hoạt SPIKE 🚨
         │
         ▼
@@ -242,7 +242,7 @@ Hệ thống sử dụng 4 bảng chính trên Supabase (PostgreSQL):
 | `id` | uuid | ID tự động |
 | `title` | text | Tiêu đề Ticket (AI sinh) |
 | `description` | text | Nguyên nhân gốc rễ + Hành động + Phòng ban |
-| `severity` | text | Luôn là `P1` (Spike = Khẩn cấp) |
+| `severity` | text | Mức cao nhất trong spike, từ `P2` đến `P5` |
 | `area` | text | Khu vực bị Spike |
 | `status` | text | `open → in_progress → resolved` |
 | `created_at` | timestamp | Thời điểm phát hiện |

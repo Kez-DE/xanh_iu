@@ -46,7 +46,7 @@ live_stream_state = {
 ticket_workflow_state = {
     "enabled": os.getenv("AUTO_TICKET_WORKFLOW_ENABLED", "true").lower() == "true",
     "in_progress_after_seconds": int(os.getenv("AUTO_TICKET_IN_PROGRESS_AFTER_SECONDS", "10")),
-    "resolved_after_seconds": int(os.getenv("AUTO_TICKET_RESOLVED_AFTER_SECONDS", "30")),
+    "resolved_after_seconds": int(os.getenv("AUTO_TICKET_RESOLVED_AFTER_SECONDS", "55")),
     "last_run_at": None,
     "moved_to_in_progress": 0,
     "moved_to_resolved": 0,
@@ -279,7 +279,7 @@ app.add_middleware(
 
 AGENT_SYSTEM_PROMPT = """Bạn là AI Assistant cho Quality Operation Cockpit của xanhSM.
 Nhiệm vụ: phân tích feedback, alerts, spike, vận hành khu vực, chất lượng tài xế/xe/app/thanh toán/an toàn.
-Trả lời tiếng Việt, ngắn gọn, có cấu trúc, ưu tiên hành động cụ thể và mức độ ưu tiên P0/P1/P2."""
+Trả lời tiếng Việt, ngắn gọn, có cấu trúc, ưu tiên hành động cụ thể theo thang P1-P5; P5 là nghiêm trọng nhất."""
 
 def build_agent_data_context() -> str:
     try:

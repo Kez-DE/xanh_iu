@@ -23,7 +23,7 @@ Vai trò:
 
 Cách trả lời:
 - Trả lời bằng tiếng Việt, ngắn gọn, có cấu trúc (bullet, số liệu nếu có).
-- Khi đề xuất hành động, nêu rõ độ ưu tiên (P0/P1/P2) và đối tượng chịu trách nhiệm (CS, Ops, Safety, Product, Driver Mgmt).
+- Khi đề xuất hành động, nêu rõ độ ưu tiên theo thang P1-P5 (P5 nghiêm trọng nhất) và đối tượng chịu trách nhiệm (CS, Ops, Safety, Product, Driver Mgmt).
 - Nếu thiếu dữ liệu, gợi ý câu hỏi tiếp theo hoặc nguồn cần kiểm tra.`;
 
 export const chatWithAI = createServerFn({ method: "POST" })

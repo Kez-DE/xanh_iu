@@ -261,7 +261,7 @@ function PreviewCard() {
         </div>
         <div className="text-sm font-semibold">Spike khiếu nại thanh toán · TP.HCM Q7</div>
         <div className="text-xs text-muted-foreground">
-          +280% trong 30 phút · 14 case · P0
+          +280% trong 30 phút · 14 case · P5
         </div>
       </div>
     </div>

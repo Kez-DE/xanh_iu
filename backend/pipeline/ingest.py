@@ -6,6 +6,7 @@ from clean import clean_text
 from env_config import get_supabase_config, has_supabase_admin_key
 
 SUPABASE_URL, SUPABASE_KEY = get_supabase_config()
+VALID_SEVERITIES = {"P1", "P2", "P3", "P4", "P5"}
 
 def get_supabase() -> Client:
     if not SUPABASE_URL or not SUPABASE_KEY:
@@ -38,6 +39,8 @@ def build_feedback_payload(row: dict, user_id: str) -> dict | None:
         severity_value = severity.upper()
     else:
         severity_value = f"P{int(severity)}"
+    if severity_value not in VALID_SEVERITIES:
+        raise ValueError(f"Invalid severity {severity_value}; expected P1-P5")
 
     return {
         "user_id": user_id,

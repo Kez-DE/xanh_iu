@@ -22,7 +22,7 @@ type Feedback = {
 
 const TOPICS = ["Tài xế", "Xe", "Ứng dụng", "Giá & thanh toán", "An toàn", "Khác"];
 const SENTIMENTS = ["positive", "neutral", "negative"];
-const SEVERITIES = ["P0", "P1", "P2", "P3"];
+const SEVERITIES = ["P1", "P2", "P3", "P4", "P5"];
 const CHANNELS = ["app", "rating", "hotline", "cs", "survey"];
 const API_BASE = import.meta.env.VITE_BACKEND_API_URL ?? "http://127.0.0.1:8000";
 

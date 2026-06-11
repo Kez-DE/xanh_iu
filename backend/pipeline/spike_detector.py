@@ -11,7 +11,9 @@ def get_supabase() -> Client:
         raise ValueError("Thiếu cấu hình SUPABASE_URL và SUPABASE key trong .env")
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
-SPIKE_THRESHOLD = 5  # Ngưỡng bùng nổ: >= 5 phản hồi tiêu cực cùng một khu vực
+SPIKE_THRESHOLD = 5  # Ngưỡng bùng nổ: >= 5 phản hồi P2-P5 cùng một khu vực
+TRIGGER_SEVERITIES = ["P2", "P3", "P4", "P5"]
+SEVERITY_RANK = {severity: rank for rank, severity in enumerate(["P1", "P2", "P3", "P4", "P5"], start=1)}
 
 def detect_spikes(hours: int = 1, max_feedback: int = 1000, max_spikes: int = 3, texts_per_area: int = 20):
     print("[Spike Detector] Đang quét hệ thống để tìm kiếm sự cố bùng nổ...")
@@ -25,11 +27,11 @@ def detect_spikes(hours: int = 1, max_feedback: int = 1000, max_spikes: int = 3,
     
     since = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
     
-    # P0/P1 are the critical severities used by the dataset and UI.
+    # P1 is informational/positive. P2-P5 can create a ticket when an area spikes.
     response = db.table("feedback") \
         .select("id, text, area, severity, topic") \
         .gte("created_at", since) \
-        .in_("severity", ["P0", "P1"]) \
+        .in_("severity", TRIGGER_SEVERITIES) \
         .order("created_at", desc=True) \
         .limit(max_feedback) \
         .execute()
@@ -42,6 +44,7 @@ def detect_spikes(hours: int = 1, max_feedback: int = 1000, max_spikes: int = 3,
     # Gom nhóm theo khu vực (area)
     area_counts = {}
     area_texts = {}
+    area_severities = {}
     
     for row in data:
         area = row.get("area", "Unknown")
@@ -50,8 +53,10 @@ def detect_spikes(hours: int = 1, max_feedback: int = 1000, max_spikes: int = 3,
         if area not in area_counts:
             area_counts[area] = 0
             area_texts[area] = []
+            area_severities[area] = []
             
         area_counts[area] += 1
+        area_severities[area].append(row.get("severity", "P2"))
         if len(area_texts[area]) < texts_per_area:
             area_texts[area].append(text)
         
@@ -67,8 +72,13 @@ def detect_spikes(hours: int = 1, max_feedback: int = 1000, max_spikes: int = 3,
     mock_user_id = profiles_res.data[0]["id"] if profiles_res.data else None
 
     alerts_created = 0
+    alerts_by_severity = {severity: 0 for severity in TRIGGER_SEVERITIES}
 
     for area, count in selected_spikes:
+        alert_severity = max(
+            area_severities[area],
+            key=lambda severity: SEVERITY_RANK.get(severity, 0),
+        )
         print(f"🚨 PHÁT HIỆN SPIKE: Khu vực {area} có {count} phàn nàn nghiêm trọng!")
             
         print(f"[{area}] Đang gửi dữ liệu cho AI phân tích...")
@@ -79,7 +89,7 @@ def detect_spikes(hours: int = 1, max_feedback: int = 1000, max_spikes: int = 3,
                 "user_id": mock_user_id,
                 "title": alert_data.get("title", f"Spike tại {area}"),
                 "description": alert_data.get("description", "Không có mô tả chi tiết") + f"\n\n**Action Plan:** {alert_data.get('action', '')}\n**Assigned Team:** {alert_data.get('assigned_team', '')}",
-                "severity": "P1",
+                "severity": alert_severity,
                 "area": area,
                 "status": "open"
             }
@@ -87,6 +97,7 @@ def detect_spikes(hours: int = 1, max_feedback: int = 1000, max_spikes: int = 3,
             try:
                 db.table("alerts").insert(alert_payload).execute()
                 alerts_created += 1
+                alerts_by_severity[alert_severity] += 1
                 print(f"✅ Đã tạo Alert khẩn cấp cho {area} thành công!")
             except Exception as e:
                 print(f"❌ Lỗi khi lưu Alert vào DB: {e}")
@@ -97,6 +108,8 @@ def detect_spikes(hours: int = 1, max_feedback: int = 1000, max_spikes: int = 3,
         "spikes_detected": len(selected_spikes),
         "candidate_spikes": len(spike_candidates),
         "alerts_created": alerts_created,
+        "alerts_by_severity": alerts_by_severity,
+        "trigger_severities": TRIGGER_SEVERITIES,
         "records_scanned": len(data),
         "max_feedback": max_feedback,
         "max_spikes": max_spikes,

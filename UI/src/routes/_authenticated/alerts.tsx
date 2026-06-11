@@ -70,6 +70,17 @@ function getTeamConfig(team: string) {
   return TEAM_CONFIG["Vận Hành"];
 }
 
+function getSeverityClass(severity: string) {
+  const classes: Record<string, string> = {
+    P5: "bg-red-700 text-white",
+    P4: "bg-orange-600 text-white",
+    P3: "bg-yellow-400 text-yellow-950",
+    P2: "bg-blue-100 text-blue-800",
+    P1: "bg-green-100 text-green-800",
+  };
+  return classes[severity] ?? "bg-muted text-muted-foreground";
+}
+
 const TABS = ["Tất cả", "Vận Hành", "CSKH", "Safety", "IT", "Driver Mgmt"];
 const API_BASE = import.meta.env.VITE_BACKEND_API_URL ?? "http://127.0.0.1:8000";
 
@@ -236,7 +247,7 @@ function AlertsPage() {
         <span className="text-muted-foreground">
           Workflow: <strong className="text-foreground">
             {workflow?.enabled
-              ? `chờ ${workflow.in_progress_after_seconds}s → xử lý → xong ${workflow.resolved_after_seconds}s`
+              ? `chờ ${workflow.in_progress_after_seconds}s → xử lý khoảng ${Math.max(0, workflow.resolved_after_seconds - workflow.in_progress_after_seconds)}s → đã xong`
               : "đã tắt"}
           </strong>
         </span>
@@ -309,11 +320,7 @@ function AlertsPage() {
                   <div className="flex items-start gap-3 flex-1">
                     {/* Severity badge */}
                     <span
-                      className={`shrink-0 px-2 py-1 rounded-lg text-xs font-mono font-bold ${
-                        alert.severity === "P1" || alert.severity === "P0"
-                          ? "bg-red-600 text-white"
-                          : "bg-yellow-400 text-yellow-900"
-                      }`}
+                      className={`shrink-0 px-2 py-1 rounded-lg text-xs font-mono font-bold ${getSeverityClass(alert.severity)}`}
                     >
                       {alert.severity}
                     </span>
