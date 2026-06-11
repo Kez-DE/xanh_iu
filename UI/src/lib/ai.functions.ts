@@ -30,41 +30,32 @@ export const chatWithAI = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    // Dùng Groq API (llama-3.3-70b-versatile) thay vì Lovable AI
-    const apiKey = process.env.GROQ_API_KEY;
-    const modelName = process.env.GROQ_MODEL_NAME ?? "llama-3.3-70b-versatile";
+    const apiBase = process.env.BACKEND_API_URL ?? "http://127.0.0.1:8000";
 
-    if (!apiKey) {
-      throw new Error("Thiếu GROQ_API_KEY trong file .env — vui lòng cấu hình lại.");
-    }
-
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(`${apiBase}/api/agent/chat`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: modelName,
-        temperature: 0.5,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...data.messages,
-        ],
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...data.messages],
       }),
     });
 
     if (!res.ok) {
       const text = await res.text();
-      if (res.status === 429) throw new Error("Quá nhiều yêu cầu, thử lại sau ít phút.");
-      if (res.status === 401) throw new Error("GROQ_API_KEY không hợp lệ.");
-      throw new Error(`Groq AI lỗi (${res.status}): ${text.slice(0, 200)}`);
+      throw new Error(`Backend agent lỗi (${res.status}): ${text.slice(0, 240)}`);
     }
 
     const json = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
+      data?: { content?: string; provider?: string; model?: string; latency_ms?: number };
     };
-    const content = json.choices?.[0]?.message?.content?.trim() ?? "";
+    const content = json.data?.content?.trim() ?? "";
     if (!content) throw new Error("AI không trả về nội dung.");
-    return { content };
+    return {
+      content,
+      provider: json.data?.provider,
+      model: json.data?.model,
+      latency_ms: json.data?.latency_ms,
+    };
   });

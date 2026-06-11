@@ -1,0 +1,70 @@
+# =====================================================
+# Repository-wide ignore rules
+# Applies to root, UI, backend, data, and generated files.
+# =====================================================
+
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+env/
+
+# Frontend build/cache output
+dist/
+dist-ssr/
+build/
+.output/
+.vinxi/
+.tanstack/
+.nitro/
+.wrangler/
+
+# Python cache/build output
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Local notebooks/runtime artifacts
+.ipynb_checkpoints/
+
+# Data scratch/output files
+data/tmp/
+data/cache/
+data/exports/
+data/generated/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary test scripts
+test_*.py

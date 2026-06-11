@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, MessageSquarePlus, MapPin, Tag, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -24,11 +24,15 @@ const TOPICS = ["Tài xế", "Xe", "Ứng dụng", "Giá & thanh toán", "An to�
 const SENTIMENTS = ["positive", "neutral", "negative"];
 const SEVERITIES = ["P0", "P1", "P2", "P3"];
 const CHANNELS = ["app", "rating", "hotline", "cs", "survey"];
+const API_BASE = import.meta.env.VITE_BACKEND_API_URL ?? "http://127.0.0.1:8000";
 
 function FeedbackPage() {
   const [list, setList] = useState<Feedback[]>([]);
+  const [newFeedbackIds, setNewFeedbackIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const initializedRef = useRef(false);
 
   const [form, setForm] = useState({
     text: "",
@@ -41,18 +45,30 @@ function FeedbackPage() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("feedback")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (error) toast.error(error.message);
-    setList((data ?? []) as Feedback[]);
+    try {
+      const res = await fetch(`${API_BASE}/api/feedback/recent?limit=100`);
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const json = (await res.json()) as { data?: Feedback[] };
+      const rows = json.data ?? [];
+      const incomingIds = rows.map((row) => row.id);
+      const freshIds = incomingIds.filter((id) => !seenIdsRef.current.has(id));
+      incomingIds.forEach((id) => seenIdsRef.current.add(id));
+      if (initializedRef.current && freshIds.length) {
+        setNewFeedbackIds(new Set(freshIds));
+        window.setTimeout(() => setNewFeedbackIds(new Set()), 1600);
+      }
+      initializedRef.current = true;
+      setList(rows);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không đọc được live feedback");
+    }
     setLoading(false);
   }
 
   useEffect(() => {
     load();
+    const id = window.setInterval(load, 1000);
+    return () => window.clearInterval(id);
   }, []);
 
   async function submit(e: React.FormEvent) {
@@ -156,7 +172,12 @@ function FeedbackPage() {
         ) : (
           <div className="divide-y divide-border">
             {list.map((f) => (
-              <div key={f.id} className="p-4 grid grid-cols-12 gap-3 items-center hover:bg-xanh-mint/20">
+              <div
+                key={f.id}
+                className={`p-4 grid grid-cols-12 gap-3 items-center hover:bg-xanh-mint/20 ${
+                  newFeedbackIds.has(f.id) ? "live-feedback-row-new" : ""
+                }`}
+              >
                 <span className="col-span-2 sm:col-span-1 text-[10px] font-mono uppercase text-muted-foreground">
                   {f.channel}
                 </span>

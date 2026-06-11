@@ -1,8 +1,8 @@
 import os
 import joblib
 
-# Giả lập đường dẫn tới thư mục models (sẽ update sau khi có file thật)
-MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
+# Model artifacts live beside the pipeline code in this repository.
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "ml")
 TOPIC_MODEL_PATH = os.path.join(MODEL_DIR, "topic_model.joblib")
 SENTIMENT_MODEL_PATH = os.path.join(MODEL_DIR, "sentiment_model.joblib")
 

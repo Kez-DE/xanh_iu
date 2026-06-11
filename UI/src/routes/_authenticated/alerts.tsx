@@ -71,44 +71,90 @@ function getTeamConfig(team: string) {
 }
 
 const TABS = ["Tất cả", "Vận Hành", "CSKH", "Safety", "IT", "Driver Mgmt"];
+const API_BASE = import.meta.env.VITE_BACKEND_API_URL ?? "http://127.0.0.1:8000";
+
+type LiveStreamStatus = {
+  running: boolean;
+  auto_ticket: boolean;
+  ticket_running: boolean;
+  batches_ingested: number;
+  ticket_every_batches: number;
+  last_ticket_at: string | null;
+  last_ticket_batch: number | null;
+  last_ticket_error: string | null;
+  last_ticket_result: {
+    spikes_detected?: number;
+    alerts_created?: number;
+  } | null;
+};
+
+type TicketWorkflowStatus = {
+  enabled: boolean;
+  in_progress_after_seconds: number;
+  resolved_after_seconds: number;
+  last_run_at: string | null;
+  moved_to_in_progress: number;
+  moved_to_resolved: number;
+  last_error: string | null;
+};
 
 function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("Tất cả");
+  const [stream, setStream] = useState<LiveStreamStatus | null>(null);
+  const [workflow, setWorkflow] = useState<TicketWorkflowStatus | null>(null);
 
-  async function fetchAlerts() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("alerts")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error) setAlerts(data ?? []);
-    setLoading(false);
+  async function fetchAlerts(showLoading = false) {
+    if (showLoading) setLoading(true);
+    try {
+      const [alertsRes, statusRes, workflowRes] = await Promise.all([
+        fetch(`${API_BASE}/api/alerts/recent?limit=100`),
+        fetch(`${API_BASE}/api/live-stream/status`),
+        fetch(`${API_BASE}/api/alerts/workflow-status`),
+      ]);
+      if (!alertsRes.ok || !statusRes.ok || !workflowRes.ok) throw new Error("Backend unavailable");
+      const alertsJson = (await alertsRes.json()) as { data?: Alert[] };
+      const statusJson = (await statusRes.json()) as { data?: LiveStreamStatus };
+      const workflowJson = (await workflowRes.json()) as { data?: TicketWorkflowStatus };
+      setAlerts(alertsJson.data ?? []);
+      setStream(statusJson.data ?? null);
+      setWorkflow(workflowJson.data ?? null);
+    } catch {
+      toast.error("Không đọc được trạng thái auto-ticket từ backend");
+    } finally {
+      if (showLoading) setLoading(false);
+    }
   }
 
   useEffect(() => {
-    fetchAlerts();
+    fetchAlerts(true);
+    const polling = window.setInterval(() => fetchAlerts(), 2000);
     // Realtime subscription
     const channel = supabase
       .channel("alerts-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "alerts" }, fetchAlerts)
+      .on("postgres_changes", { event: "*", schema: "public", table: "alerts" }, () => fetchAlerts())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      window.clearInterval(polling);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function updateStatus(id: string, newStatus: string) {
     setUpdating(id);
-    const { error } = await supabase
-      .from("alerts")
-      .update({ status: newStatus })
-      .eq("id", id);
-    if (error) {
-      toast.error("Cập nhật thất bại: " + error.message);
-    } else {
+    try {
+      const response = await fetch(`${API_BASE}/api/alerts/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       toast.success(newStatus === "in_progress" ? "✅ Đã nhận xử lý!" : "🎉 Đã đánh dấu hoàn thành!");
       fetchAlerts();
+    } catch (error) {
+      toast.error("Cập nhật thất bại: " + (error instanceof Error ? error.message : "Unknown error"));
     }
     setUpdating(null);
   }
@@ -139,7 +185,7 @@ function AlertsPage() {
           </p>
         </div>
         <button
-          onClick={fetchAlerts}
+          onClick={() => fetchAlerts(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-white text-sm hover:bg-muted/50 transition-colors"
         >
           <RefreshCw className="h-4 w-4" />
@@ -161,6 +207,40 @@ function AlertsPage() {
           <div className="font-display text-3xl font-bold text-green-600">{resolvedCount}</div>
           <div className="text-sm text-green-700 font-medium mt-1">🟢 Đã xong</div>
         </div>
+      </div>
+
+      <div className="border border-border bg-white px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        <span className="inline-flex items-center gap-2 font-semibold">
+          <span className={`h-2 w-2 rounded-full ${stream?.running ? "bg-xanh-green animate-pulse" : "bg-muted-foreground"}`} />
+          {stream?.running ? "Live stream đang chạy" : "Live stream đã dừng"}
+        </span>
+        <span className="text-muted-foreground">Batch: <strong className="text-foreground">{stream?.batches_ingested ?? 0}</strong></span>
+        <span className="text-muted-foreground">
+          Auto-ticket: <strong className="text-foreground">
+            {stream?.ticket_running
+              ? "đang phân tích"
+              : stream?.auto_ticket
+                ? `mỗi ${stream.ticket_every_batches} batch`
+                : "đã tắt"}
+          </strong>
+        </span>
+        {stream?.last_ticket_at && (
+          <span className="text-muted-foreground">
+            Lần gần nhất: <strong className="text-foreground">batch {stream.last_ticket_batch}</strong>
+            {` · ${stream.last_ticket_result?.alerts_created ?? 0} ticket`}
+          </span>
+        )}
+        {stream?.last_ticket_error && (
+          <span className="text-red-600">Lỗi trigger: {stream.last_ticket_error}</span>
+        )}
+        <span className="text-muted-foreground">
+          Workflow: <strong className="text-foreground">
+            {workflow?.enabled
+              ? `chờ ${workflow.in_progress_after_seconds}s → xử lý → xong ${workflow.resolved_after_seconds}s`
+              : "đã tắt"}
+          </strong>
+        </span>
+        {workflow?.last_error && <span className="text-red-600">Lỗi workflow: {workflow.last_error}</span>}
       </div>
 
       {/* Tab Filter theo Phòng Ban */}

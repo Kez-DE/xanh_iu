@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database as DatabaseSchema } from "@/integrations/supabase/types";
 import {
@@ -419,44 +419,54 @@ function CategoryBreakdown() {
 
 function LiveFeed() {
   const [feed, setFeed] = useState<DatabaseSchema["public"]["Tables"]["feedback"]["Row"][]>([]);
+  const [newFeedIds, setNewFeedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [streamStatus, setStreamStatus] = useState<"connecting" | "live" | "error">("connecting");
+  const apiBase = import.meta.env.VITE_BACKEND_API_URL ?? "http://127.0.0.1:8000";
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
+    let clearNewIdsTimer: number | undefined;
 
     async function loadFeed() {
-      const { data, error } = await supabase
-        .from("feedback")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(5);
+      try {
+        const res = await fetch(`${apiBase}/api/feedback/recent?limit=8`);
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const json = (await res.json()) as {
+          data?: DatabaseSchema["public"]["Tables"]["feedback"]["Row"][];
+        };
+        if (!active) return;
+        const rows = json.data ?? [];
+        const incomingIds = rows.map((row) => row.id);
+        const freshIds = incomingIds.filter((id) => !seenIdsRef.current.has(id));
+        incomingIds.forEach((id) => seenIdsRef.current.add(id));
 
-      if (!active) return;
-      if (!error) setFeed(data ?? []);
-      setLoading(false);
+        if (initializedRef.current && freshIds.length) {
+          setNewFeedIds(new Set(freshIds));
+          if (clearNewIdsTimer) window.clearTimeout(clearNewIdsTimer);
+          clearNewIdsTimer = window.setTimeout(() => setNewFeedIds(new Set()), 1600);
+        }
+        initializedRef.current = true;
+        setFeed(rows);
+        setStreamStatus("live");
+      } catch {
+        if (active) setStreamStatus("error");
+      } finally {
+        if (active) setLoading(false);
+      }
     }
 
     loadFeed();
-    const polling = window.setInterval(loadFeed, 10000);
-
-    const channel = supabase
-      .channel("dashboard-live-feedback")
-      .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, () => loadFeed())
-      .subscribe((status) => {
-        if (!active) return;
-        if (status === "SUBSCRIBED") setStreamStatus("live");
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setStreamStatus("error");
-        }
-      });
+    const polling = window.setInterval(loadFeed, 1000);
 
     return () => {
       active = false;
       window.clearInterval(polling);
-      supabase.removeChannel(channel);
+      if (clearNewIdsTimer) window.clearTimeout(clearNewIdsTimer);
     };
-  }, []);
+  }, [apiBase]);
 
   return (
     <Card>
@@ -492,7 +502,9 @@ function LiveFeed() {
           feed.map((f) => (
             <div
               key={f.id}
-              className="px-5 py-3 grid grid-cols-12 gap-3 items-center hover:bg-xanh-mint/30 transition-colors"
+              className={`px-5 py-3 grid grid-cols-12 gap-3 items-center hover:bg-xanh-mint/30 transition-colors ${
+                newFeedIds.has(f.id) ? "live-feedback-row-new" : ""
+              }`}
             >
               <span className="col-span-2 sm:col-span-1 text-[10px] font-mono uppercase text-muted-foreground">
                 {f.channel}

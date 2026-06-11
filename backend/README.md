@@ -135,18 +135,18 @@ Kiểm tra server còn sống không.
 
 ---
 
-### `POST /api/trigger-demo-batch`
-**🎯 Dùng cho Demo Day!** Bắn 150 review giả lập vào database để kích hoạt Spike.
+### `POST /api/ingest-real-dataset`
+Nạp dataset thật từ thư mục `/data` vào bảng `feedback`.
 
 **Cách gọi (curl):**
 ```bash
-curl -X POST http://localhost:8000/api/trigger-demo-batch
+curl -X POST "http://localhost:8000/api/ingest-real-dataset?limit=150&batch_size=150"
 ```
 
 **Cách gọi (Python):**
 ```python
 import requests
-res = requests.post("http://localhost:8000/api/trigger-demo-batch")
+res = requests.post("http://localhost:8000/api/ingest-real-dataset", params={"limit": 150, "batch_size": 150})
 print(res.json())
 ```
 
@@ -154,16 +154,29 @@ print(res.json())
 ```json
 {
   "status": "success",
-  "message": "Đã chèn thành công 150 bản ghi."
+  "data": {
+    "inserted": 150,
+    "failed": 0,
+    "rows_per_second": 150.0
+  }
 }
 ```
 
-**Kết quả:** 150 bản ghi xuất hiện trong bảng `feedback` trên Supabase, tập trung dày đặc ở khu vực `HN-Cau-Giay` để tạo Spike.
+Không truyền `limit` thì hệ thống nạp toàn bộ dataset thật.
+
+---
+
+### `POST /api/run-real-pipeline`
+Chạy luồng thật end-to-end: nạp dataset từ `/data`, sau đó detect spike và gọi AI agent khi đủ ngưỡng.
+
+```bash
+curl -X POST "http://localhost:8000/api/run-real-pipeline?limit=150&batch_size=150"
+```
 
 ---
 
 ### `POST /api/trigger-spike-detect`
-**🎯 Dùng cho Demo Day!** Ép hệ thống quét Spike ngay lập tức (thay vì chờ định kỳ).
+Ép hệ thống quét Spike ngay lập tức (thay vì chờ định kỳ).
 
 **Cách gọi (curl):**
 ```bash
@@ -262,14 +275,14 @@ scheduler.add_job(detect_spikes, 'interval', minutes=10)
 
 ---
 
-## 🚨 Kịch bản Demo Day (5 phút)
+## 🚨 Luồng Chạy Thật
 
 1. **Bật server:** `python main.py`
 2. **Mở Swagger UI:** `http://localhost:8000/docs`
-3. **Gọi `/api/trigger-demo-batch`** → 150 reviews đổ vào DB
-4. **Gọi `/api/trigger-spike-detect`** → AI phân tích, sinh 13 Ticket 🔴
-5. **Mở Frontend** → Dashboard đỏ rực, Ticket Triage hiện đầy đủ theo phòng ban
-6. **Demo Human-in-the-loop** → Sửa 1 nhãn sai của AI trên trang Phản hồi
+3. **Gọi `/api/ingest-real-dataset`** → dataset thật trong `/data` đổ vào DB
+4. **Gọi `/api/trigger-spike-detect`** → AI phân tích, sinh Ticket khi đủ ngưỡng
+5. **Hoặc gọi `/api/run-real-pipeline`** để chạy cả ingest và spike detect trong một lệnh
+6. **Mở Frontend** → Dashboard, Alerts, Feedback, Chat dùng dữ liệu trong Supabase
 
 ---
 
