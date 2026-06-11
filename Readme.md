@@ -2,7 +2,7 @@
 
 Tài liệu này hướng dẫn cài đặt, cấu hình, chạy và theo dõi toàn bộ repo **AI Quality Intelligence Platform**.
 
-Để đóng gói và chạy bằng container, xem [DOCKER.md](./DOCKER.md).
+Để đóng gói và chạy bằng container, xem [DOCKER.md](./DOCKER.md). Hướng dẫn chi tiết cho máy người nhận trên Windows và macOS nằm tại [DOCKER_WINDOWS_MAC.md](./DOCKER_WINDOWS_MAC.md).
 
 ## 1. Tổng quan hệ thống
 

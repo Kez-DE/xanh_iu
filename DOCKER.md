@@ -1,5 +1,7 @@
 # Chạy và phân phối hệ thống bằng Docker
 
+Người nhận chạy trên Windows hoặc macOS xem hướng dẫn từng bước tại [DOCKER_WINDOWS_MAC.md](./DOCKER_WINDOWS_MAC.md).
+
 Docker Compose đóng gói hệ thống thành ba service:
 
 | Service | Vai trò |
